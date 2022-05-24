@@ -1,2 +1,1 @@
-# BDC
-# BDC
+Thema 12 assignments
