@@ -1,6 +1,8 @@
+import itertools
 import multiprocessing as mp
 import argparse as ap
 import csv
+from csv import reader
 
 argparser = ap.ArgumentParser(description="Script voor Opdracht 1 van Big Data Computing")
 argparser.add_argument("-n", action="store",
@@ -13,7 +15,8 @@ args = argparser.parse_args()
 
 
 def calculate_phred_score(line):
-    '''calculates the phred score for a line'''
+    '''calculates the average phred score for a line'''
+    line = line.strip()
     ascii_scores = [ord(c) - 33  for c in line]
     phred_score = sum(ascii_scores) / len(ascii_scores)
     return phred_score
@@ -32,22 +35,52 @@ def fastq_reader(fastqfile):
                 lines.append(line)
     return lines
 
+def keyfunc(row):
+    # `row` is one row of the CSV file.
+    # replace this with the name column.
+    return row
+
+def worker(chunk):
+    # `chunk` will be a list of CSV rows all with the same name column
+    # replace this with your real computation
+    # print(chunk)
+    result = calculate_phred_score(chunk)
+    return result
+
+
+def csv_writer(data):
+    '''write a list of values in data list, indexed to a csv file'''
+    zipped_reads = zip(list(range(0,len(data))), data)
+    with open(args.csvfile.name, 'w', encoding='UTF8') as f:
+        writer = csv.writer(f)
+        for read in zipped_reads:
+            writer.writerow(read)
+
 
 def main():
-    '''Main'''
-    cpus = args.n
-    with mp.Pool(cpus) as pool:
+    pool = mp.Pool()
+    num_chunks = 4
+    results = []
+    for file in args.fastq_files:
+        file_name = file.name
+        with open(file_name) as f:
+            chunks = itertools.groupby(f, keyfunc)
+            while True:
+                # make a list of num_chunks chunks
+                groups = [list(chunk) for key, chunk in
+                        itertools.islice(chunks, num_chunks)]
+                if groups:
+                    for count, group in enumerate(groups, start=1):
+                        if count % 4 == 0:
+                            result = pool.map(worker, group)
+                            results.extend(result)
+                else:
+                    break
+    pool.close()
+    pool.join()
 
-        for file in args.fastq_files:
-            file_name = file.name
-            lines = fastq_reader(file_name)
-            results = pool.map(calculate_phred_score, lines)
-            if args.csvfile is not None:
-                zipped_reads = zip(list(range(0,len(results))), results)
-                with open(args.csvfile.name, 'w', encoding='UTF8') as f:
-                    writer = csv.writer(f)
-                    for read in zipped_reads:
-                        writer.writerow(read)
+    if args.csvfile:
+        csv_writer(results)
 
 
 if __name__ == "__main__":
