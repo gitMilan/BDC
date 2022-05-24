@@ -1,17 +1,6 @@
 import multiprocessing as mp
 import argparse as ap
-import os
 import csv
-
-
-'''
-TODO written 18 mei
-
-write the results to a CSV file
-
-
-'''
-
 
 argparser = ap.ArgumentParser(description="Script voor Opdracht 1 van Big Data Computing")
 argparser.add_argument("-n", action="store",
@@ -23,17 +12,15 @@ argparser.add_argument("fastq_files", action="store", type=ap.FileType('r'), nar
 args = argparser.parse_args()
 
 
-# https://nurdabolatov.com/parallel-processing-large-file-in-python
-
-
 def calculate_phred_score(line):
-
+    '''calculates the phred score for a line'''
     ascii_scores = [ord(c) - 33  for c in line]
     phred_score = sum(ascii_scores) / len(ascii_scores)
     return phred_score
 
 
 def fastq_reader(fastqfile):
+    '''reads a fastq file and returns the phred score lines as a list'''
     lines = []
     with open(fastqfile, 'r') as fastq:
         line_counter = 0
@@ -46,7 +33,8 @@ def fastq_reader(fastqfile):
     return lines
 
 
-if __name__ == "__main__":
+def main():
+    '''Main'''
     cpus = args.n
     with mp.Pool(cpus) as pool:
 
@@ -54,7 +42,6 @@ if __name__ == "__main__":
             file_name = file.name
             lines = fastq_reader(file_name)
             results = pool.map(calculate_phred_score, lines)
-
             if args.csvfile is not None:
                 zipped_reads = zip(list(range(0,len(results))), results)
                 with open(args.csvfile.name, 'w', encoding='UTF8') as f:
@@ -63,13 +50,5 @@ if __name__ == "__main__":
                         writer.writerow(read)
 
 
-
-
-        # results = pool.map(calculate_phred_score, lines)
-        # with open(file_path) as f:
-        #     writer = csv.writer(f)
-
-
-
-
-
+if __name__ == "__main__":
+    main()

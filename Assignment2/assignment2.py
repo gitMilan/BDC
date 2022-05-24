@@ -1,10 +1,8 @@
 import argparse as ap
 import multiprocessing as mp
 from multiprocessing.managers import BaseManager, SyncManager
-import os, sys, time, queue
-import argparse as ap
+import time, queue
 import csv
-
 
 argparser = ap.ArgumentParser(description="Script voor Opdracht 2 van Big Data Computing;  Calculate PHRED scores over the network.")
 mode = argparser.add_mutually_exclusive_group(required=True)
@@ -37,9 +35,10 @@ PORTNUM = 5381
 AUTHKEY = b'whathasitgotinitspocketsesss?'
 # data = ["Always", "look", "on", "the", "bright", "side", "of", "life!"]
 
-def fastq_reader(fastqfiles):
-    lines = []
 
+def fastq_reader(fastqfiles):
+    '''reads fastqfiles and returns the phred score lines as list'''
+    lines = []
     for file in fastqfiles:
         file_name = file.name
         with open(file_name, 'r') as fastq:
@@ -78,6 +77,7 @@ def make_server_manager(port, authkey):
 
 
 def runserver(fn, data):
+    '''run the server'''
     # Start a shared manager server and access its queues
     manager = make_server_manager(PORTNUM, b'whathasitgotinitspocketsesss?')
     shared_job_q = manager.get_job_q()
@@ -143,12 +143,14 @@ def make_client_manager(ip, port, authkey):
 
 
 def calculate_phred_score(line):
+    '''calculates the phred score from a line and returns this value'''
     ascii_scores = [ord(c) - 33  for c in line]
     phred_score = sum(ascii_scores) / len(ascii_scores)
     return phred_score
 
 
 def write_to_csv(data):
+    '''write data to csv file'''
     with open(args.csvfile.name, 'a', encoding='UTF8') as f:
         writer = csv.writer(f)
         writer.writerow(data)
@@ -164,6 +166,7 @@ def capitalize(word):
 
 
 def runclient(num_processes):
+    '''run the client'''
     manager = make_client_manager(IP, PORTNUM, AUTHKEY)
     job_q = manager.get_job_q()
     result_q = manager.get_result_q()
@@ -172,6 +175,7 @@ def runclient(num_processes):
 
 
 def run_workers(job_q, result_q, num_processes):
+    '''run the workers'''
     processes = []
     for p in range(num_processes):
         temP = mp.Process(target=peon, args=(job_q, result_q))
@@ -183,6 +187,7 @@ def run_workers(job_q, result_q, num_processes):
 
 
 def peon(job_q, result_q):
+    '''peon'''
     my_name = mp.current_process().name
     while True:
         try:
@@ -206,24 +211,24 @@ def peon(job_q, result_q):
             time.sleep(1)
 
 
-
 def run_as_server():
-
+    '''run as server'''
     server = mp.Process(target=runserver, args=(calculate_phred_score, data))
     server.start()
     server.join()
 
 
 def run_as_client():
+    '''run as client'''
     client = mp.Process(target=runclient, args=(4,))
     client.start()
     client.join()
 
 
 def main():
+    '''run main'''
     if args.c is True:
         run_as_client()
-
     else:
         run_as_server()
 
