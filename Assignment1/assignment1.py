@@ -2,7 +2,6 @@ import itertools
 import multiprocessing as mp
 import argparse as ap
 import csv
-from csv import reader
 
 argparser = ap.ArgumentParser(description="Script voor Opdracht 1 van Big Data Computing")
 argparser.add_argument("-n", action="store",
