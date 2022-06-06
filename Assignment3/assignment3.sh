@@ -1,9 +1,24 @@
- #!/bin/bash
-#SBATCH --time 2:00:00
-#SBATCH --nodes=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=16000
-module load Bowtie2
-export BOWTIE2_INDEXES=/data/p225083/BOWTIE2_INDEXES
-export DATA=/data/p225083
-bowtie2 -x human -U $DATA/all.fq -p 16 -S ${DATA}/output.sam
+#!/bin/bash
+
+#SBATCH --job-name=assignment3
+
+# Define, how many nodes you need. Here, we ask for 1 node.
+# Each node has 16 or 20 CPU cores.
+#SBATCH --nodes=16
+
+#SBATCH --time=0-01:00:00
+
+#SBATCH --mem-per-cpu=1500MB
+##SBATCH --mem=5GB
+
+#SBATCH --partition=assemblix
+n=17
+
+TEMP_DIR=/dev/null
+FQ_DATA=/data/dataprocessing/MinIONData/all.fq
+REFERENCE_INDEX=/data/dataprocessing/MinIONData/all_bacteria.fna
+TIME_OUTPUT=timings.txt
+
+source /commons/conda/conda_load.sh
+
+/usr/bin/time -o ${TIME_OUTPUT} --append -f "${n}\t%e" minimap2 -a ${REFERENCE_INDEX} ${FQ_DATA} -t ${n} > ${TEMP_DIR}/minimap2output${n}cores.sam
